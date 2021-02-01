@@ -174,7 +174,8 @@ impl Decode for String {
                 alloc::vec![0; len]
             };
             r.read_exact(&mut vec[..])?;
-            String::from_utf8(vec).map_err(|e| bare_io::Error::new(bare_io::ErrorKind::InvalidInput, e))
+            // String::from_utf8(vec).map_err(|e| bare_io::Error::new(bare_io::ErrorKind::InvalidInput, e))
+            String::from_utf8(vec).map_err(|e| bare_io::Error::new(bare_io::ErrorKind::InvalidInput, unimplemented!()))
         } else {
             let mut string = String::new();
             r.read_to_string(&mut string)?;
@@ -271,7 +272,7 @@ where
                 vec.push(T::decode_options(r, options.options.clone())?);
             }
         } else {
-            let r = &mut BufReader::new(r);
+            let r = &mut BufReader::<&mut R, 8192>::new(r);
             while r.fill_buf()?.len() > 0 {
                 vec.push(T::decode_options(r, options.options.clone())?);
             }

@@ -1,0 +1,22 @@
+[package]
+name = "bare-io"
+version = "0.2.1"
+authors = ["Brendan Molloy <brendan@bbqsrc.net>"]
+description = "The bare essentials of std::io for use in no_std. Alloc support is optional."
+license = "Apache-2.0 OR MIT"
+edition = "2018"
+repository = "https://github.com/bbqsrc/bare-io"
+categories = ["no-std"]
+
+[dependencies]
+memchr = { version = "2", default-features = false }
+
+[features]
+default = []
+alloc = []
+std = ["alloc"]
+nightly = []
+std-nightly = ["std", "nightly"]
+
+[package.metadata.docs.rs]
+features = ["nightly"]
