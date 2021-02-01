@@ -1,7 +1,10 @@
+#![no_std]
 #![deny(missing_docs)]
 
 //! Utilities for working with I/O streams.
 
+extern crate alloc;
+extern crate bare_io;
 extern crate byteorder;
 extern crate uninitialized;
 extern crate resize_slice;

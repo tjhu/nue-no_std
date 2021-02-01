@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use bare_io::Cursor;
 use std::mem::size_of;
 use nue::{Encode, Decode, Un, Aligned};
 

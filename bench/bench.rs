@@ -6,7 +6,7 @@ extern crate nue;
 extern crate pod;
 
 use std::mem::size_of;
-use std::io::{BufReader, Cursor, Repeat, Seek, SeekFrom, repeat};
+use bare_io::{BufReader, Cursor, Repeat, Seek, SeekFrom, repeat};
 use pod::{Be, Le, Pod, Decode, Encode};
 use test::black_box as bb;
 use test::Bencher;

@@ -1,4 +1,3 @@
-use std::io;
 use seek_forward::{Tell, SeekForward};
 
 /// An extension trait that will seek to meet a specified alignment.
@@ -6,11 +5,11 @@ pub trait SeekAlignExt {
     /// Seeks forward to a multiple of `alignment`.
     ///
     /// Returns the resulting offset in the stream upon success.
-    fn align_to(&mut self, alignment: u64) -> io::Result<u64>;
+    fn align_to(&mut self, alignment: u64) ->  bare_io::Result<u64>;
 }
 
 impl<T: Tell + SeekForward> SeekAlignExt for T {
-    fn align_to(&mut self, alignment: u64) -> io::Result<u64> {
+    fn align_to(&mut self, alignment: u64) ->  bare_io::Result<u64> {
         let pos = try!(self.tell());
         let pos_alignment = pos % alignment;
         if pos_alignment > 0 {
@@ -23,7 +22,7 @@ impl<T: Tell + SeekForward> SeekAlignExt for T {
 
 #[test]
 fn align() {
-    use std::io::Cursor;
+    use bare_io::Cursor;
     use seek_forward::{SeekAll, SeekAbsolute};
 
     let data = [0; 0x80];

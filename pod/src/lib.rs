@@ -1,3 +1,4 @@
+#![no_std]
 #![cfg_attr(feature = "unstable", feature(box_raw))]
 #![deny(missing_docs)]
 
@@ -37,11 +38,13 @@
 //!
 //! ```
 
-extern crate uninitialized;
-extern crate resize_slice;
+extern crate alloc;
 extern crate byteorder;
-extern crate packed as nue_packed;
-extern crate nue_io;
+extern crate bare_io;
+extern crate cstr_core;
+pub extern crate packed as nue_packed;
+extern crate resize_slice;
+extern crate uninitialized;
 
 mod pod;
 
@@ -51,8 +54,8 @@ pub mod code;
 /// Containers for primitives
 pub mod endian;
 
-pub use endian::{Le, Be, Native};
-pub use code::{Encode, Decode};
+pub use code::{Decode, Encode};
+pub use endian::{Be, Le, Native};
 pub use pod::Pod;
 
 /// Re-export the `packed` crate

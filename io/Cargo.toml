@@ -13,6 +13,8 @@ license = "MIT"
 [dependencies]
 byteorder = "0.3"
 resize-slice = "0.1"
+bare-io = "0.2.1"
+cstr_core = "0.2.2"
 
 [dependencies.uninitialized]
 version = "0.0"

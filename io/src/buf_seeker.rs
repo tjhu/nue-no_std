@@ -1,5 +1,6 @@
-use std::io::{self, Read, BufRead};
-use std::cmp::min;
+use alloc::vec::Vec;
+use bare_io::{self, Read, BufRead};
+use core::cmp::min;
 use resize_slice::SliceExt;
 use seek_forward::{SeekForward, SeekBackward, SeekRewind, SeekAbsolute, SeekEnd, Tell};
 
@@ -7,7 +8,7 @@ const DEFAULT_BUF_SIZE: usize = 0x400 * 0x40;
 
 /// A buffered reader that allows for seeking within the buffer.
 ///
-/// Unlike `std::io::BufReader`, seeking doesn't invalidate the buffer.
+/// Unlike `bare_io::BufReader`, seeking doesn't invalidate the buffer.
 pub struct BufSeeker<T> {
     inner: T,
     buf: Vec<u8>,
@@ -39,7 +40,7 @@ impl<T> BufSeeker<T> {
 
 impl<T: SeekForward> SeekForward for BufSeeker<T> {
     #[inline]
-    fn seek_forward(&mut self, offset: u64) -> io::Result<u64> {
+    fn seek_forward(&mut self, offset: u64) ->  bare_io::Result<u64> {
         let pos = (self.buf.len() - self.pos) as u64;
         if offset <= pos as u64 {
             self.pos += offset as usize;
@@ -55,7 +56,7 @@ impl<T: SeekForward> SeekForward for BufSeeker<T> {
 
 impl<T: SeekBackward> SeekBackward for BufSeeker<T> {
     #[inline]
-    fn seek_backward(&mut self, offset: u64) -> io::Result<u64> {
+    fn seek_backward(&mut self, offset: u64) ->  bare_io::Result<u64> {
         let pos = self.pos as u64;
         if offset <= pos {
             self.pos -= offset as usize;
@@ -71,7 +72,7 @@ impl<T: SeekBackward> SeekBackward for BufSeeker<T> {
 
 impl<T: SeekRewind> SeekRewind for BufSeeker<T> {
     #[inline]
-    fn seek_rewind(&mut self) -> io::Result<()> {
+    fn seek_rewind(&mut self) ->  bare_io::Result<()> {
         try!(self.inner.seek_rewind());
         self.pos = self.buf.len();
         Ok(())
@@ -80,14 +81,14 @@ impl<T: SeekRewind> SeekRewind for BufSeeker<T> {
 
 impl<T: Tell> Tell for BufSeeker<T> {
     #[inline]
-    fn tell(&mut self) -> io::Result<u64> {
+    fn tell(&mut self) ->  bare_io::Result<u64> {
         self.inner.tell().map(|v| v - (self.buf.len() - self.pos) as u64)
     }
 }
 
 impl<T: SeekAbsolute> SeekAbsolute for BufSeeker<T> {
     #[inline]
-    fn seek_absolute(&mut self, pos: u64) -> io::Result<u64> {
+    fn seek_absolute(&mut self, pos: u64) ->  bare_io::Result<u64> {
         let pos = try!(self.inner.seek_absolute(pos));
         self.pos = self.buf.len();
         Ok(pos)
@@ -96,7 +97,7 @@ impl<T: SeekAbsolute> SeekAbsolute for BufSeeker<T> {
 
 impl<T: SeekEnd> SeekEnd for BufSeeker<T> {
     #[inline]
-    fn seek_end(&mut self, offset: i64) -> io::Result<u64> {
+    fn seek_end(&mut self, offset: i64) ->  bare_io::Result<u64> {
         let pos = try!(self.inner.seek_end(offset));
         self.pos = self.buf.len();
         Ok(pos)
@@ -105,7 +106,7 @@ impl<T: SeekEnd> SeekEnd for BufSeeker<T> {
 
 impl<T: Read> Read for BufSeeker<T> {
     #[inline]
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+    fn read(&mut self, buf: &mut [u8]) ->  bare_io::Result<usize> {
         if self.pos >= self.buf.len() && buf.len() >= self.buf.capacity() {
             self.inner.read(buf)
         } else {
@@ -118,8 +119,8 @@ impl<T: Read> Read for BufSeeker<T> {
 
 impl<T: Read> BufRead for BufSeeker<T> {
     #[inline]
-    fn fill_buf(&mut self) -> io::Result<&[u8]> {
-        use std::slice::from_raw_parts_mut;
+    fn fill_buf(&mut self) ->  bare_io::Result<&[u8]> {
+        use alloc::slice::from_raw_parts_mut;
 
         if self.pos >= self.buf.len() {
             unsafe {

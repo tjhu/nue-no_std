@@ -1,10 +1,10 @@
-use std::io::{self, Read, Write};
-use std::cmp::min;
+use bare_io::{self, Read, Write};
+use core::cmp::min;
 use seek_forward::{SeekForward, Tell};
 
 /// Wraps around a stream to limit the length of the underlying stream.
 ///
-/// This implementation differs from `std::io::Take` in that it also allows writes,
+/// This implementation differs from `bare_io::Take` in that it also allows writes,
 /// and seeking forward is allowed if the underlying stream supports it.
 pub struct Take<T> {
     inner: T,
@@ -22,7 +22,7 @@ impl<T> Take<T> {
 }
 
 impl<T: Write> Write for Take<T> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+    fn write(&mut self, buf: &[u8]) ->  bare_io::Result<usize> {
         let limit = min(self.limit, buf.len() as u64);
 
         if limit == 0 {
@@ -35,13 +35,13 @@ impl<T: Write> Write for Take<T> {
         Ok(inner)
     }
 
-    fn flush(&mut self) -> io::Result<()> {
+    fn flush(&mut self) ->  bare_io::Result<()> {
         self.inner.flush()
     }
 }
 
 impl<T: Read> Read for Take<T> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+    fn read(&mut self, buf: &mut [u8]) ->  bare_io::Result<usize> {
         let limit = min(self.limit, buf.len() as u64);
 
         if limit == 0 {
@@ -56,7 +56,7 @@ impl<T: Read> Read for Take<T> {
 }
 
 impl<T: SeekForward> SeekForward for Take<T> {
-    fn seek_forward(&mut self, offset: u64) -> io::Result<u64> {
+    fn seek_forward(&mut self, offset: u64) ->  bare_io::Result<u64> {
         let res = try!(self.inner.seek_forward(min(offset, self.limit)));
         self.limit -= res;
         Ok(res)
@@ -64,7 +64,7 @@ impl<T: SeekForward> SeekForward for Take<T> {
 }
 
 impl<T: Tell> Tell for Take<T> {
-    fn tell(&mut self) -> io::Result<u64> {
+    fn tell(&mut self) ->  bare_io::Result<u64> {
         self.inner.tell()
     }
 }

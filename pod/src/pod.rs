@@ -1,7 +1,10 @@
-use std::mem::{size_of, transmute, uninitialized};
-use std::slice::{from_raw_parts, from_raw_parts_mut};
+use packed::{Aligned, Unaligned};
 use resize_slice::SliceExt;
-use packed::{Unaligned, Aligned};
+use core::mem::{size_of, transmute, uninitialized};
+use core::hash::Hash;
+use alloc::slice::{from_raw_parts, from_raw_parts_mut};
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 use uninitialized;
 
 use self::unstable::{box_from, box_into};
@@ -11,13 +14,16 @@ use self::unstable::{box_from, box_into};
 /// It is unsafe to `impl` this manually, use `#[derive(Pod)]` instead.
 pub unsafe trait Pod: Sized {
     #[doc(hidden)]
-    fn __assert_pod() { }
+    fn __assert_pod() {}
 
     /// Safely borrows the aligned value mutably
     ///
     /// See also: `Aligned::as_aligned_mut`
     #[inline]
-    fn mut_aligned<T: Pod + Aligned<Unaligned=Self>>(&mut self) -> Option<&mut T> where Self: Copy + Unaligned {
+    fn mut_aligned<T: Pod + Aligned<Unaligned = Self>>(&mut self) -> Option<&mut T>
+    where
+        Self: Copy + Unaligned,
+    {
         unsafe { T::as_aligned_mut(self) }
     }
 
@@ -25,7 +31,10 @@ pub unsafe trait Pod: Sized {
     ///
     /// See also: `Aligned::as_unaligned_mut`
     #[inline]
-    fn mut_unaligned<T: Copy + Unaligned>(s: &mut T) -> Option<&mut Self> where Self: Aligned<Unaligned=T> {
+    fn mut_unaligned<T: Copy + Unaligned>(s: &mut T) -> Option<&mut Self>
+    where
+        Self: Aligned<Unaligned = T>,
+    {
         unsafe { Self::as_aligned_mut(s) }
     }
 
@@ -46,7 +55,10 @@ pub unsafe trait Pod: Sized {
     ///
     /// See also: `Aligned::from_unaligned`
     #[inline]
-    fn aligned<T: Copy + Unaligned>(s: T) -> Self where Self: Aligned<Unaligned=T> {
+    fn aligned<T: Copy + Unaligned>(s: T) -> Self
+    where
+        Self: Aligned<Unaligned = T>,
+    {
         unsafe { Self::from_unaligned(s) }
     }
 
@@ -68,7 +80,10 @@ pub unsafe trait Pod: Sized {
     ///
     /// Panics if `slice.len()` is not the same as the type's size
     #[inline]
-    fn from_slice<'a>(slice: &'a [u8]) -> &'a Self where Self: Unaligned {
+    fn from_slice<'a>(slice: &'a [u8]) -> &'a Self
+    where
+        Self: Unaligned,
+    {
         assert_eq!(slice.len(), size_of::<Self>());
         unsafe { &*(slice.as_ptr() as *const _) }
     }
@@ -79,7 +94,10 @@ pub unsafe trait Pod: Sized {
     ///
     /// Panics if `slice.len()` is not the same as the type's size
     #[inline]
-    fn from_mut_slice<'a>(slice: &'a mut [u8]) -> &'a mut Self where Self: Unaligned {
+    fn from_mut_slice<'a>(slice: &'a mut [u8]) -> &'a mut Self
+    where
+        Self: Unaligned,
+    {
         assert_eq!(slice.len(), size_of::<Self>());
         unsafe { &mut *(slice.as_mut_ptr() as *mut _) }
     }
@@ -90,7 +108,10 @@ pub unsafe trait Pod: Sized {
     ///
     /// Panics if `vec.len()` is not the same as the type's size
     #[inline]
-    fn from_vec(vec: Vec<u8>) -> Box<Self> where Self: Unaligned {
+    fn from_vec(vec: Vec<u8>) -> Box<Self>
+    where
+        Self: Unaligned,
+    {
         Self::from_box(vec.into_boxed_slice())
     }
 
@@ -100,11 +121,12 @@ pub unsafe trait Pod: Sized {
     ///
     /// Panics if `slice.len()` is not the same as the type's size
     #[inline]
-    fn from_box(slice: Box<[u8]>) -> Box<Self> where Self: Unaligned {
+    fn from_box(slice: Box<[u8]>) -> Box<Self>
+    where
+        Self: Unaligned,
+    {
         assert!(slice.len() == size_of::<Self>());
-        unsafe {
-            box_from((&mut *box_into(slice)).as_mut_ptr() as *mut _)
-        }
+        unsafe { box_from((&mut *box_into(slice)).as_mut_ptr() as *mut _) }
     }
 
     /// Converts a boxed POD to a byte vector
@@ -129,11 +151,12 @@ pub unsafe trait Pod: Sized {
     ///
     /// Panics if the two types are not the same size
     #[inline]
-    fn map<'a, T: Pod + Unaligned>(&'a self) -> &'a T where Self: Unaligned {
+    fn map<'a, T: Pod + Unaligned>(&'a self) -> &'a T
+    where
+        Self: Unaligned,
+    {
         assert_eq!(size_of::<Self>(), size_of::<T>());
-        unsafe {
-            transmute(self)
-        }
+        unsafe { transmute(self) }
     }
 
     /// Converts a POD type from one to another of the same size.
@@ -142,11 +165,12 @@ pub unsafe trait Pod: Sized {
     ///
     /// Panics if the two types are not the same size
     #[inline]
-    fn map_mut<'a, T: Pod + Unaligned>(&'a mut self) -> &'a mut T where Self: Unaligned {
+    fn map_mut<'a, T: Pod + Unaligned>(&'a mut self) -> &'a mut T
+    where
+        Self: Unaligned,
+    {
         assert_eq!(size_of::<Self>(), size_of::<T>());
-        unsafe {
-            transmute(self)
-        }
+        unsafe { transmute(self) }
     }
 
     /// Generates a new uninitialized instance of a POD type.
@@ -167,7 +191,10 @@ pub unsafe trait Pod: Sized {
     ///
     /// Will panic if the output type does not perfectly fit into the slice.
     #[inline]
-    fn map_slice<'a, T: Pod + Unaligned>(s: &'a [Self]) -> &'a [T] where Self: Unaligned {
+    fn map_slice<'a, T: Pod + Unaligned>(s: &'a [Self]) -> &'a [T]
+    where
+        Self: Unaligned,
+    {
         let len = s.len() * size_of::<Self>();
         assert_eq!(len % size_of::<T>(), 0);
         unsafe { from_raw_parts(s.as_ptr() as *const T, len / size_of::<T>()) }
@@ -179,28 +206,31 @@ pub unsafe trait Pod: Sized {
     ///
     /// Will panic if the output type does not perfectly fit into the slice.
     #[inline]
-    fn map_mut_slice<'a, T: Pod + Unaligned>(s: &'a mut [Self]) -> &'a mut [T] where Self: Unaligned {
+    fn map_mut_slice<'a, T: Pod + Unaligned>(s: &'a mut [Self]) -> &'a mut [T]
+    where
+        Self: Unaligned,
+    {
         let len = s.len() * size_of::<Self>();
         assert_eq!(len % size_of::<T>(), 0);
         unsafe { from_raw_parts_mut(s.as_mut_ptr() as *mut T, len / size_of::<T>()) }
     }
 }
 
-unsafe impl Pod for () { }
-unsafe impl Pod for f32 { }
-unsafe impl Pod for f64 { }
-unsafe impl Pod for i8 { }
-unsafe impl Pod for u8 { }
-unsafe impl Pod for i16 { }
-unsafe impl Pod for u16 { }
-unsafe impl Pod for i32 { }
-unsafe impl Pod for u32 { }
-unsafe impl Pod for i64 { }
-unsafe impl Pod for u64 { }
-unsafe impl Pod for isize { }
-unsafe impl Pod for usize { }
-unsafe impl<T> Pod for *const T { }
-unsafe impl<T> Pod for *mut T { }
+unsafe impl Pod for () {}
+unsafe impl Pod for f32 {}
+unsafe impl Pod for f64 {}
+unsafe impl Pod for i8 {}
+unsafe impl Pod for u8 {}
+unsafe impl Pod for i16 {}
+unsafe impl Pod for u16 {}
+unsafe impl Pod for i32 {}
+unsafe impl Pod for u32 {}
+unsafe impl Pod for i64 {}
+unsafe impl Pod for u64 {}
+unsafe impl Pod for isize {}
+unsafe impl Pod for usize {}
+unsafe impl<T> Pod for *const T {}
+unsafe impl<T> Pod for *mut T {}
 
 macro_rules! pod_def {
     ($($x:expr),*) => {
@@ -210,7 +240,7 @@ macro_rules! pod_def {
     };
 }
 
-unsafe impl<T: Pod> Pod for (T,) { }
+unsafe impl<T: Pod> Pod for (T,) {}
 pod_def! { 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f }
 pod_def! { 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f }
 pod_def! { 0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f }
@@ -219,14 +249,23 @@ pod_def! { 0x40 }
 
 #[cfg(feature = "unstable")]
 mod unstable {
-    pub unsafe fn box_from<T: ?Sized>(raw: *mut T) -> Box<T> { Box::from_raw(raw) }
-    pub fn box_into<T: ?Sized>(b: Box<T>) -> *mut T { Box::into_raw(b) }
+    pub unsafe fn box_from<T: ?Sized>(raw: *mut T) -> Box<T> {
+        Box::from_raw(raw)
+    }
+    pub fn box_into<T: ?Sized>(b: Box<T>) -> *mut T {
+        Box::into_raw(b)
+    }
 }
 
 #[cfg(not(feature = "unstable"))]
 mod unstable {
-    use std::mem::transmute;
+    use core::mem::transmute;
+    use alloc::boxed::Box;
 
-    pub unsafe fn box_from<T: ?Sized>(raw: *mut T) -> Box<T> { transmute(raw) }
-    pub fn box_into<T: ?Sized>(b: Box<T>) -> *mut T { unsafe { transmute(b) } }
+    pub unsafe fn box_from<T: ?Sized>(raw: *mut T) -> Box<T> {
+        transmute(raw)
+    }
+    pub fn box_into<T: ?Sized>(b: Box<T>) -> *mut T {
+        unsafe { transmute(b) }
+    }
 }

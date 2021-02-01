@@ -1,17 +1,17 @@
 extern crate pod;
 
-use pod::{Pod, Le, Be, Encode, Decode};
-use pod::packed::{Packed, Aligned, Un};
-use std::io::{Cursor, Seek, SeekFrom};
+use pod::packed::{Aligned, Packed, Un};
+use pod::{Be, Decode, Encode, Le, Pod};
+use bare_io::{Cursor, Seek, SeekFrom};
 
 #[cfg(not(feature = "unstable"))]
 mod stable {
     use pod::packed::Unaligned;
-    unsafe impl Unaligned for super::POD { }
+    unsafe impl Unaligned for super::POD {}
 }
 
-unsafe impl Packed for POD { }
-unsafe impl Pod for POD { }
+unsafe impl Packed for POD {}
+unsafe impl Pod for POD {}
 
 #[repr(C)]
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -22,12 +22,7 @@ struct POD {
     two: Be<u32>,
 }
 
-const POD_BYTES: [u8; 9] = [
-    0x00,
-    0xff, 0xff,
-    0x01, 0x00,
-    0x00, 0x00, 0x00, 0x02,
-];
+const POD_BYTES: [u8; 9] = [0x00, 0xff, 0xff, 0x01, 0x00, 0x00, 0x00, 0x00, 0x02];
 
 fn sample() -> POD {
     POD {

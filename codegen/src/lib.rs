@@ -204,7 +204,7 @@ fn expand_derive_encode(cx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, anno
                 let mut cond = None;
 
                 let statement = quote_stmt!(cx,
-                    let _ = try!(::nue::Encode::encode($expr, __w));
+                    let _ = ::nue::Encode::encode($expr, __w)?;
                 ).unwrap();
                 let mut statement = vec![statement];
 
@@ -214,26 +214,26 @@ fn expand_derive_encode(cx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, anno
                         FieldAttribute::Default(_) => (),
                         FieldAttribute::Align(expr) => {
                             needs_seek = true;
-                            statement.insert(0, quote_stmt!(cx, let _ = try!(::nue::SeekAlignExt::align_to(__w, $expr)); ).unwrap());
+                            statement.insert(0, quote_stmt!(cx, let _ = ::nue::SeekAlignExt::align_to(__w, $expr)); ).unwrap()?;
                         },
                         FieldAttribute::Skip(expr) => {
                             needs_seek = true;
                             statement.insert(0, quote_stmt!(cx,
-                                let _ = try!(::nue::SeekForward::seek_forward(__w, $expr));
+                                let _ = ::nue::SeekForward::seek_forward(__w, $expr)?;
                             ).unwrap());
                         },
                         FieldAttribute::Limit(expr) => statement.insert(0, quote_stmt!(cx, let __w = &mut ::nue::Take::new(::std::borrow::BorrowMut::borrow_mut(__w), $expr); ).unwrap()),
                         FieldAttribute::Consume(expr) => statement.push(quote_stmt!(cx,
                             if $expr {
-                                let _ = try!(match ::std::io::copy(&mut ::std::io::repeat(0), __w) {
-                                    ::std::result::Result::Err(ref err) if err.kind() == ::std::io::ErrorKind::WriteZero => Ok(0),
+                                let _ = (match ::bare_io::copy(&mut ::bare_io::repeat(0), __w) {
+                                    ::std::result::Result::Err(ref err) if err.kind() == ::bare_io::ErrorKind::WriteZero => Ok(0),
                                     res => res,
-                                });
+                                }?;
                             }
                         ).unwrap()),
                         FieldAttribute::Assert(expr) => statement.insert(0, quote_stmt!(cx,
                             if !$expr {
-                                return Err(::std::io::Error::new(::std::io::ErrorKind::InvalidInput, concat!("assertion ", stringify!($expr), " failed")));
+                                return Err(::bare_io::Error::new(::bare_io::ErrorKind::InvalidInput, concat!("assertion ", stringify!($expr), " failed")));
                             }
                         ).unwrap()),
                     }
@@ -276,7 +276,7 @@ fn expand_derive_encode(cx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, anno
         impl $generics ::nue::Encode for $ty $where_clause {
             type Options = ();
 
-            fn encode<__W: ::std::io::Write>(&self, __w: &mut __W) -> ::std::io::Result<()> {
+            fn encode<__W: ::bare_io::Write>(&self, __w: &mut __W) -> :: bare_io::Result<()> {
                 $needs_seek
                 $encoders
 
@@ -314,7 +314,7 @@ fn expand_derive_decode(cx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, anno
                 let field_type = &field.ty;
 
                 let statement = quote_stmt!(cx,
-                    let $let_name: $field_type = try!(::nue::Decode::decode(__r));
+                    let $let_name: $field_type = ::nue::Decode::decode(__r)?;
                 ).unwrap();
                 let mut statement = vec![statement];
 
@@ -324,23 +324,23 @@ fn expand_derive_decode(cx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, anno
                         FieldAttribute::Default(expr) => cond_default = Some(expr),
                         FieldAttribute::Align(expr) => {
                             needs_seek = true;
-                            statement.insert(0, quote_stmt!(cx, let _ = try!(::nue::SeekAlignExt::align_to(__r, $expr)); ).unwrap());
+                            statement.insert(0, quote_stmt!(cx, let _ = ::nue::SeekAlignExt::align_to(__r, $expr)); ).unwrap()?;
                         },
                         FieldAttribute::Skip(expr) => {
                             needs_seek = true;
                             statement.insert(0, quote_stmt!(cx,
-                                let _ = try!(::nue::SeekForward::seek_forward(__r, $expr));
+                                let _ = ::nue::SeekForward::seek_forward(__r, $expr)?;
                             ).unwrap());
                         },
                         FieldAttribute::Limit(expr) => statement.insert(0, quote_stmt!(cx, let __r = &mut ::nue::Take::new(::std::borrow::BorrowMut::borrow_mut(__r), $expr); ).unwrap()),
                         FieldAttribute::Consume(expr) => statement.push(quote_stmt!(cx,
                             if $expr {
-                                let _ = try!(::std::io::copy(__r, &mut ::std::io::sink()));
+                                let _ = ::bare_io::copy(__r, &mut ::bare_io::sink())?;
                             }
                         ).unwrap()),
                         FieldAttribute::Assert(expr) => statement.push(quote_stmt!(cx,
                             if !$expr {
-                                return Err(::std::io::Error::new(::std::io::ErrorKind::InvalidInput, concat!("assertion ", stringify!($expr), " failed")));
+                                return Err(::bare_io::Error::new(::bare_io::ErrorKind::InvalidInput, concat!("assertion ", stringify!($expr), " failed")));
                             }
                         ).unwrap()),
 
@@ -400,12 +400,12 @@ fn expand_derive_decode(cx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, anno
         impl $generics ::nue::Decode for $ty $where_clause {
             type Options = ();
 
-            fn decode<__R: ::std::io::Read>(__r: &mut __R) -> ::std::io::Result<Self> {
+            fn decode<__R: ::bare_io::Read>(__r: &mut __R) -> :: bare_io::Result<Self> {
                 $needs_seek
                 $decoders
                 let __result = $result;
 
-                let _ = try!(::nue::Decode::validate(&__result));
+                let _ = ::nue::Decode::validate(&__result)?;
 
                 Ok(__result)
             }

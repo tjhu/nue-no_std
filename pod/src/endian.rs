@@ -1,11 +1,11 @@
-use std::marker::PhantomData;
-use std::fmt;
-use std::cmp::Ordering;
-use std::hash::{Hash, Hasher};
-use byteorder::{ByteOrder, LittleEndian, BigEndian, NativeEndian};
-use uninitialized::uninitialized;
-use packed::{Unaligned, Aligned, Packed};
+use byteorder::{BigEndian, ByteOrder, LittleEndian, NativeEndian};
+use packed::{Aligned, Packed, Unaligned};
 use pod::Pod;
+use core::cmp::Ordering;
+use alloc::fmt;
+use core::hash::{Hash, Hasher};
+use core::marker::PhantomData;
+use uninitialized::uninitialized;
 
 /// A type alias for unaligned little endian primitives
 pub type Le<T> = EndianPrimitive<LittleEndian, T>;
@@ -59,9 +59,9 @@ impl<B: ByteOrder, T: EndianConvert> EndianPrimitive<B, T> {
     }
 }
 
-unsafe impl<B, T: EndianConvert> Pod for EndianPrimitive<B, T> { }
-unsafe impl<B, T: EndianConvert> Unaligned for EndianPrimitive<B, T> { }
-unsafe impl<B, T: EndianConvert> Packed for EndianPrimitive<B, T> { }
+unsafe impl<B, T: EndianConvert> Pod for EndianPrimitive<B, T> {}
+unsafe impl<B, T: EndianConvert> Unaligned for EndianPrimitive<B, T> {}
+unsafe impl<B, T: EndianConvert> Packed for EndianPrimitive<B, T> {}
 
 impl<B: ByteOrder, T: Default + EndianConvert> Default for EndianPrimitive<B, T> {
     #[inline]
@@ -83,16 +83,20 @@ impl<B: ByteOrder, T: fmt::Debug + EndianConvert> fmt::Debug for EndianPrimitive
     }
 }
 
-impl<BRHS: ByteOrder, RHS: EndianConvert, B: ByteOrder, T: EndianConvert + PartialEq<RHS>> PartialEq<EndianPrimitive<BRHS, RHS>> for EndianPrimitive<B, T> {
+impl<BRHS: ByteOrder, RHS: EndianConvert, B: ByteOrder, T: EndianConvert + PartialEq<RHS>>
+    PartialEq<EndianPrimitive<BRHS, RHS>> for EndianPrimitive<B, T>
+{
     #[inline]
     fn eq(&self, other: &EndianPrimitive<BRHS, RHS>) -> bool {
         self.get().eq(&other.get())
     }
 }
 
-impl<B: ByteOrder, T: EndianConvert + Eq> Eq for EndianPrimitive<B, T> { }
+impl<B: ByteOrder, T: EndianConvert + Eq> Eq for EndianPrimitive<B, T> {}
 
-impl<BRHS: ByteOrder, RHS: EndianConvert, B: ByteOrder, T: EndianConvert + PartialOrd<RHS>> PartialOrd<EndianPrimitive<BRHS, RHS>> for EndianPrimitive<B, T> {
+impl<BRHS: ByteOrder, RHS: EndianConvert, B: ByteOrder, T: EndianConvert + PartialOrd<RHS>>
+    PartialOrd<EndianPrimitive<BRHS, RHS>> for EndianPrimitive<B, T>
+{
     #[inline]
     fn partial_cmp(&self, other: &EndianPrimitive<BRHS, RHS>) -> Option<Ordering> {
         self.get().partial_cmp(&other.get())
@@ -106,7 +110,10 @@ impl<B: ByteOrder, T: EndianConvert + Ord> Ord for EndianPrimitive<B, T> {
     }
 }
 
-impl<B, T: EndianConvert + Hash> Hash for EndianPrimitive<B, T> where T::Unaligned: Hash {
+impl<B, T: EndianConvert + Hash> Hash for EndianPrimitive<B, T>
+where
+    T::Unaligned: Hash,
+{
     #[inline]
     fn hash<H: Hasher>(&self, h: &mut H) {
         self.value.hash(h)
@@ -117,13 +124,13 @@ impl<B, T: EndianConvert> Clone for EndianPrimitive<B, T> {
     #[inline]
     fn clone(&self) -> Self {
         EndianPrimitive {
-            value: self.value.clone(),
+            value: self.value,
             _phantom: PhantomData,
         }
     }
 }
 
-impl<B, T: EndianConvert> Copy for EndianPrimitive<B, T> { }
+impl<B, T: EndianConvert> Copy for EndianPrimitive<B, T> {}
 
 /// Describes a value that can be converted to and from a specified byte order.
 pub trait EndianConvert: Aligned {
@@ -169,14 +176,14 @@ impl EndianConvert for bool {
 
     #[inline]
     fn to<B: ByteOrder>(self) -> Self::Unaligned {
-        if self as u8 != 0 { true } else { false }
+        self as u8 != 0
     }
 }
 
 #[test]
 fn endian_size() {
-    use std::mem::size_of;
     use std::mem::align_of;
+    use std::mem::size_of;
 
     type B = NativeEndian;
 

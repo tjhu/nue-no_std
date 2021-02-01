@@ -1,5 +1,5 @@
-use std::io::{self, Read, Write, BufRead};
-use std::cmp::min;
+use bare_io::{self, Read, Write, BufRead};
+use core::cmp::min;
 use seek_forward::{SeekForward, SeekAbsolute, Tell, SeekRewind, SeekEnd, SeekBackward};
 
 /// Creates an isolated segment of an underlying stream.
@@ -34,7 +34,7 @@ impl<T> Region<T> {
 }
 
 impl<T: Tell + SeekAbsolute> Region<T> {
-    fn position(&mut self) -> io::Result<u64> {
+    fn position(&mut self) ->  bare_io::Result<u64> {
         let pos = try!(self.inner.tell());
 
         if pos < self.start {
@@ -44,7 +44,7 @@ impl<T: Tell + SeekAbsolute> Region<T> {
         }
     }
 
-    fn limit(&mut self, len: u64) -> io::Result<u64> {
+    fn limit(&mut self, len: u64) ->  bare_io::Result<u64> {
         let pos = try!(self.position());
         let end = self.end;
 
@@ -63,7 +63,7 @@ fn limit(pos: u64, end: u64, len: u64) -> u64 {
 }
 
 impl<T: Read + Tell + SeekAbsolute> Read for Region<T> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+    fn read(&mut self, buf: &mut [u8]) ->  bare_io::Result<usize> {
         let len = try!(self.limit(buf.len() as u64)) as usize;
 
         if len == 0 {
@@ -76,7 +76,7 @@ impl<T: Read + Tell + SeekAbsolute> Read for Region<T> {
 }
 
 impl<T: Write + Tell + SeekAbsolute> Write for Region<T> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+    fn write(&mut self, buf: &[u8]) ->  bare_io::Result<usize> {
         let len = try!(self.limit(buf.len() as u64)) as usize;
 
         if len == 0 {
@@ -86,26 +86,26 @@ impl<T: Write + Tell + SeekAbsolute> Write for Region<T> {
         }
     }
 
-    fn flush(&mut self) -> io::Result<()> {
+    fn flush(&mut self) ->  bare_io::Result<()> {
         self.inner.flush()
     }
 }
 
 impl<T: SeekAbsolute> SeekAbsolute for Region<T> {
-    fn seek_absolute(&mut self, pos: u64) -> io::Result<u64> {
+    fn seek_absolute(&mut self, pos: u64) ->  bare_io::Result<u64> {
         self.inner.seek_absolute(min(self.start.saturating_add(pos), self.end)).map(|v| v - self.start)
     }
 }
 
 impl<T: SeekForward + Tell + SeekAbsolute> SeekForward for Region<T> {
-    fn seek_forward(&mut self, offset: u64) -> io::Result<u64> {
+    fn seek_forward(&mut self, offset: u64) ->  bare_io::Result<u64> {
         let offset = try!(self.limit(offset));
         self.inner.seek_forward(offset)
     }
 }
 
 impl<T: Tell + SeekBackward> SeekBackward for Region<T> {
-    fn seek_backward(&mut self, offset: u64) -> io::Result<u64> {
+    fn seek_backward(&mut self, offset: u64) ->  bare_io::Result<u64> {
         let off = try!(self.inner.tell()).saturating_sub(self.start);;
         let offset = min(off, offset);
         self.inner.seek_backward(offset)
@@ -113,25 +113,25 @@ impl<T: Tell + SeekBackward> SeekBackward for Region<T> {
 }
 
 impl<T: SeekAbsolute> SeekRewind for Region<T> {
-    fn seek_rewind(&mut self) -> io::Result<()> {
+    fn seek_rewind(&mut self) ->  bare_io::Result<()> {
         self.inner.seek_absolute(self.start).map(|_| ())
     }
 }
 
 impl<T: SeekAbsolute> SeekEnd for Region<T> {
-    fn seek_end(&mut self, offset: i64) -> io::Result<u64> {
+    fn seek_end(&mut self, offset: i64) ->  bare_io::Result<u64> {
         self.inner.seek_absolute((self.end as i64 + offset) as u64).map(|v| v - self.start)
     }
 }
 
 impl<T: Tell> Tell for Region<T> {
-    fn tell(&mut self) -> io::Result<u64> {
+    fn tell(&mut self) ->  bare_io::Result<u64> {
         self.inner.tell().map(|v| min(self.end, v.saturating_sub(self.start)))
     }
 }
 
 impl<T: BufRead + Tell + SeekAbsolute> BufRead for Region<T> {
-    fn fill_buf(&mut self) -> io::Result<&[u8]> {
+    fn fill_buf(&mut self) ->  bare_io::Result<&[u8]> {
         let pos = try!(self.position());
 
         let buf = try!(self.inner.fill_buf());
@@ -147,7 +147,7 @@ impl<T: BufRead + Tell + SeekAbsolute> BufRead for Region<T> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::{Cursor, Read};
+    use bare_io::{Cursor, Read};
     use super::Region;
     use read_exact::ReadExactExt;
     use seek_forward::{SeekAll, SeekAbsolute};

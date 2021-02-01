@@ -1,5 +1,5 @@
-extern crate syntex;
-extern crate nue_codegen;
+// extern crate syntex;
+// extern crate nue_codegen;
 
 use std::env;
 use std::path::Path;

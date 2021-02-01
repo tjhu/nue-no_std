@@ -21,9 +21,9 @@ path = "bench.rs"
 [features]
 unstable = ["pod/unstable", "packed/unstable"]
 
-[dependencies.nue-io]
-version = "0.3"
-path = "io"
+# [dependencies.nue-io]
+# version = "0.3"
+# path = "io"
 
 [dependencies.pod]
 version = "0.3"
